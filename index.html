@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>London Shootout</title>
+<style>
+  :root {
+    --honey:  #FDEDB0;
+    --salmon: #F5A8A0;
+    --orange: #F5903C;
+    --lime:   #8DC63F;
+    --purple: #C084D0;
+    --cream:  #FFF8EC;
+    --dark:   #3A2E1E;
+    --mid:    #7A6A55;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════
+     SCREENS
+  ══════════════════════════════════════ */
+  .screen {
+    display: none;
+    width: 100vw;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 40px 32px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════════
+     SCREEN 1 — PHOTO GRID (no names)
+  ══════════════════════════════════════ */
+  #s1 { gap: 28px; background: var(--cream); }
+
+  .grid-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--mid);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .click-hint {
+    font-size: 13px;
+    color: var(--salmon);
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 24px;
+    animation: blink 1.8s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  .monument-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .monument-card {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(58,46,30,.12);
+    background: #fff;
+    transition: transform .2s;
+  }
+  .monument-card:hover { transform: scale(1.02); }
+  .monument-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: block;
+    background: var(--honey);
+  }
+  /* fallback emoji placeholder */
+  .monument-card .ph {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    background: var(--honey);
+  }
+  .card-label {
+    padding: 14px 16px 16px;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--dark);
+    text-align: center;
+    display: none; /* hidden in screen 1, shown in screen 2 */
+    line-height: 1.2;
+  }
+
+  /* ══════════════════════════════════════
+     SCREEN 1b — ANSWER OVERLAY
+  ══════════════════════════════════════ */
+  #s1-answer {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,20,10,.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #s1-answer.show { display: flex; }
+  #s1-answer .city-name {
+    font-size: 96px;
+    font-weight: 900;
+    color: var(--honey);
+    animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+    line-height: 1;
+  }
+  #s1-answer .city-sub {
+    font-size: 24px;
+    color: rgba(255,255,255,.7);
+    font-weight: 600;
+  }
+  #s1-answer .tap-next {
+    margin-top: 12px;
+    font-size: 14px;
+    color: rgba(255,255,255,.4);
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    animation: blink 1.8s ease-in-out infinite;
+  }
+  @keyframes popIn {
+    from { transform: scale(.5); opacity: 0; }
+    to   { transform: scale(1);  opacity: 1; }
+  }
+
+  /* ══════════════════════════════════════
+     SCREEN 2 — GRID WITH NAMES + TIMER
+  ══════════════════════════════════════ */
+  #s2 { gap: 24px; background: var(--cream); }
+
+  /* flash border on whole page */
+  @keyframes flashBorder {
+    0%,100% { box-shadow: inset 0 0 0 10px var(--orange); }
+    50%      { box-shadow: inset 0 0 0 10px transparent; }
+  }
+  #s2.flashing { animation: flashBorder .5s ease-in-out infinite; }
+
+  .timer-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .timer-label-txt {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--orange);
+  }
+
+  /* thin progress bar under grid */
+  .timer-bar-wrap {
+    width: 100%;
+    max-width: 900px;
+    height: 10px;
+    background: var(--honey);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .timer-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--orange);
+    transition: width 1s linear, background .3s;
+    width: 100%;
+  }
+  .timer-bar-fill.urgent { background: var(--salmon); }
+
+  .timer-num-big {
+    font-size: 56px;
+    font-weight: 900;
+    color: var(--orange);
+    line-height: 1;
+    min-width: 60px;
+    text-align: center;
+  }
+  .timer-num-big.urgent { color: var(--salmon); }
+
+  /* ══════════════════════════════════════
+     SCREEN 3 — BLANK (between timer end and quiz)
+  ══════════════════════════════════════ */
+  #s3 {
+    background: #1a1a2e;
+    cursor: pointer;
+  }
+  #s3 .ready-msg {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--honey);
+    text-align: center;
+    line-height: 1.3;
+  }
+  #s3 .tap-msg {
+    margin-top: 20px;
+    font-size: 16px;
+    color: rgba(255,255,255,.4);
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    animation: blink 1.8s ease-in-out infinite;
+  }
+
+  /* ══════════════════════════════════════
+     SCREEN 4 — SHOOTOUT QUIZ
+  ══════════════════════════════════════ */
+  #s4 { background: #1a1a2e; gap: 0; }
+
+  .quiz-circle {
+    width: 340px;
+    height: 340px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 8px solid var(--orange);
+    box-shadow: 0 0 0 4px rgba(245,144,60,.25), 0 8px 40px rgba(0,0,0,.4);
+    margin-bottom: 32px;
+    background: #2a2a3e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .quiz-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .quiz-circle .q-ph {
+    font-size: 110px;
+    position: absolute;
+  }
+
+  .quiz-instruction {
+    font-size: 16px;
+    color: rgba(255,255,255,.6);
+    text-align: center;
+    margin-bottom: 28px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .quiz-instruction strong { color: var(--honey); }
+
+  .answer-zone {
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .reveal-btn {
+    padding: 14px 42px;
+    border-radius: 40px;
+    background: var(--orange);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: transform .15s;
+    display: inline-block;
+  }
+  .reveal-btn:hover { transform: scale(1.04); }
+  .reveal-btn.hidden-btn { background: transparent; border: 2px solid rgba(255,255,255,.15); color: rgba(255,255,255,.3); font-size: 14px; padding: 10px 28px; }
+
+  .answer-reveal {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .answer-reveal.show { display: flex; }
+  .answer-name {
+    font-size: 44px;
+    font-weight: 900;
+    color: var(--honey);
+    text-align: center;
+  }
+  .answer-fact {
+    font-size: 16px;
+    color: rgba(255,255,255,.65);
+    text-align: center;
+    max-width: 420px;
+    line-height: 1.5;
+  }
+
+  .next-btn {
+    margin-top: 24px;
+    padding: 12px 36px;
+    border-radius: 40px;
+    background: var(--lime);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: transform .15s;
+    display: none;
+  }
+  .next-btn.show { display: inline-block; }
+  .next-btn:hover { transform: scale(1.04); }
+
+  /* done screen inside s4 */
+  .done-msg {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .done-msg.show { display: flex; }
+  .done-emoji { font-size: 96px; }
+  .done-title { font-size: 42px; font-weight: 900; color: var(--honey); }
+  .done-sub   { font-size: 18px; color: rgba(255,255,255,.6); }
+  .restart-btn {
+    margin-top: 12px;
+    padding: 14px 40px;
+    border-radius: 40px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+  }
+
+  /* progress dots */
+  .progress-dots {
+    display: flex;
+    gap: 10px;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+  .pdot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.25);
+    transition: background .3s;
+  }
+  .pdot.done   { background: var(--lime); }
+  .pdot.current { background: var(--orange); }
+
+  /* phase indicator top-left */
+  .phase-chip {
+    position: fixed;
+    top: 18px; left: 18px;
+    background: rgba(255,255,255,.15);
+    backdrop-filter: blur(8px);
+    color: var(--dark);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 20;
+  }
+  #s3 .phase-chip, #s4 .phase-chip { color: rgba(255,255,255,.7); }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ SCREEN 1 — PHOTO GRID ════════════════════ -->
+<div class="screen active" id="s1" onclick="s1Click()">
+  <div class="phase-chip">Phase 1 · Motivazione</div>
+  <div class="grid-title">🏙️ What city is this?</div>
+  <div class="click-hint">tap anywhere to reveal the answer</div>
+
+  <div class="monument-grid" id="grid1">
+    <!-- generated by JS -->
+  </div>
+</div>
+
+<!-- answer overlay -->
+<div id="s1-answer" onclick="s1AnswerClick()">
+  <div class="city-name">London!</div>
+  <div class="city-sub">🇬🇧 capital of England, United Kingdom</div>
+  <div class="tap-next">tap to see the monuments</div>
+</div>
+
+<!-- ════════════════════ SCREEN 2 — GRID WITH NAMES + TIMER ════════════════════ -->
+<div class="screen" id="s2">
+  <div class="phase-chip">Phase 1 · Memorise!</div>
+  <div class="grid-title" style="color:var(--orange)">🧠 Memorise the monuments!</div>
+
+  <div class="monument-grid" id="grid2">
+    <!-- same grid, with names, generated by JS -->
+  </div>
+
+  <div class="timer-bar-wrap">
+    <div class="timer-bar-fill" id="timerBar"></div>
+  </div>
+
+  <div class="timer-row">
+    <div class="timer-num-big" id="timerNum">6</div>
+    <div class="timer-label-txt">seconds — remember the names!</div>
+  </div>
+</div>
+
+<!-- ════════════════════ SCREEN 3 — BLANK ════════════════════ -->
+<div class="screen" id="s3" onclick="goToQuiz()">
+  <div class="phase-chip" style="color:rgba(255,255,255,.7)">Phase 1 · Shootout</div>
+  <div class="ready-msg">📄 Write your answer<br>crumple it · shoot! 🏀</div>
+  <div class="tap-msg">tap to start the quiz</div>
+</div>
+
+<!-- ════════════════════ SCREEN 4 — QUIZ ════════════════════ -->
+<div class="screen" id="s4">
+  <div class="phase-chip" style="color:rgba(255,255,255,.7)">Phase 1 · Shootout</div>
+
+  <!-- progress dots -->
+  <div class="progress-dots" id="progressDots"></div>
+
+  <!-- monument circle -->
+  <div class="quiz-circle" id="quizCircle">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="quiz-instruction">
+    <strong>Write</strong> the name → <strong>crumple</strong> the paper → <strong>shoot!</strong> 🏀<br>
+    Only the scorer reads the answer aloud.
+  </div>
+
+  <div class="answer-zone">
+    <!-- state A: before reveal -->
+    <div id="quizRevealZone">
+      <button class="reveal-btn" onclick="revealAnswer(event)">Reveal answer</button>
+    </div>
+
+    <!-- state B: answer shown -->
+    <div class="answer-reveal" id="answerReveal">
+      <div class="answer-name" id="answerName"></div>
+      <div class="answer-fact" id="answerFact"></div>
+    </div>
+
+    <button class="next-btn" id="nextBtn" onclick="nextMonument(event)">Next monument →</button>
+  </div>
+
+  <!-- done state -->
+  <div class="done-msg" id="doneMsg">
+    <div class="done-emoji">🏆</div>
+    <div class="done-title">Shootout complete!</div>
+    <div class="done-sub">Move to Phase 2 — Speed Tourist! 📖</div>
+    <button class="restart-btn" onclick="restart()">↺ Play again</button>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA — replace .png filenames with your real images
+// ═══════════════════════════════════════════════════
+const MONUMENTS = [
+  {
+    name:   "Big Ben",
+    img:    "big-ben.png",
+    emoji:  "🕐",
+    bg:     "#FFF3CC",
+    fact:   "A clock tower, 96 m tall — at Westminster Palace"
+  },
+  {
+    name:   "The London Eye",
+    img:    "london-eye.png",
+    emoji:  "🎡",
+    bg:     "#D6EEFF",
+    fact:   "A giant Ferris wheel, 135 m high — on the River Thames"
+  },
+  {
+    name:   "Buckingham Palace",
+    img:    "buckingham-palace.png",
+    emoji:  "👑",
+    bg:     "#FFE0EC",
+    fact:   "Home of the King — guards wear red tunics and bearskin hats"
+  },
+  {
+    name:   "Tower Bridge",
+    img:    "tower-bridge.png",
+    emoji:  "🌉",
+    bg:     "#DFF7F2",
+    fact:   "A famous bridge that opens for ships on the River Thames"
+  },
+  {
+    name:   "Westminster Abbey",
+    img:    "westminster-abbey.png",
+    emoji:  "⛪",
+    bg:     "#F5E8FF",
+    fact:   "A historic church where British kings and queens are crowned"
+  },
+  {
+    name:   "The River Thames",
+    img:    "river-thames.png",
+    emoji:  "🌊",
+    bg:     "#D6F4FF",
+    fact:   "The longest river in England — it flows through London"
+  },
+  {
+    name:   "The Queen's Guards",
+    img:    "queens-guards.png",
+    emoji:  "💂",
+    bg:     "#FFE6D6",
+    fact:   "Famous guards in red uniforms and tall black bearskin hats"
+  },
+  {
+  name:   "The Red Bus",
+  img:    "red-bus.png",
+  emoji:  "🚌",
+  bg:     "#FFE3E3",
+  fact:   "A famous red double-decker bus in London"
+},
+{
+  name:   "Red Phone Box",
+  img:    "phone-box.png",
+  emoji:  "☎️",
+  bg:     "#FFD9D9",
+  fact:   "A traditional red telephone box found across London"
+}];
+
+// ═══════════════════════════════════════════════════
+// BUILD GRIDS
+// ═══════════════════════════════════════════════════
+function buildGrids() {
+  const g1 = document.getElementById('grid1');
+  const g2 = document.getElementById('grid2');
+
+  const grid1Monuments = [
+    'The Red Bus',
+    'The London Eye',
+    'Tower Bridge'
+  ];
+
+  MONUMENTS.forEach(m => {
+
+    // Grid 1: solo Red Bus, London Eye e Tower Bridge
+    if (grid1Monuments.includes(m.name)) {
+      const c1 = document.createElement('div');
+      c1.className = 'monument-card';
+      c1.innerHTML = `
+        <div class="ph" style="background:${m.bg}">${m.emoji}</div>
+        <div class="card-label">${m.name}</div>
+      `;
+      tryImage(c1, m.img, m.emoji, m.bg);
+      g1.appendChild(c1);
+    }
+
+    // Grid 2: tutti gli elementi
+    const c2 = document.createElement('div');
+    c2.className = 'monument-card';
+    c2.innerHTML = `
+      <div class="ph" style="background:${m.bg}">${m.emoji}</div>
+      <div class="card-label" style="display:block">${m.name}</div>
+    `;
+    tryImage(c2, m.img, m.emoji, m.bg);
+    g2.appendChild(c2);
+  });
+}
+
+// Try loading a real image; if it fails keep the emoji placeholder
+function tryImage(card, src, emoji, bg) {
+  const img = new Image();
+  img.onload = () => {
+    const ph = card.querySelector('.ph');
+    const realImg = document.createElement('img');
+    realImg.src = src;
+    card.replaceChild(realImg, ph);
+  };
+  img.onerror = () => {}; // keep placeholder
+  img.src = src;
+}
+
+// ═══════════════════════════════════════════════════
+// SCREEN 1 — "What city?"
+// ═══════════════════════════════════════════════════
+function s1Click() {
+  document.getElementById('s1-answer').classList.add('show');
+}
+
+function s1AnswerClick() {
+  document.getElementById('s1-answer').classList.remove('show');
+  goToS2();
+}
+
+// ═══════════════════════════════════════════════════
+// SCREEN 2 — Memorise + timer
+// ═══════════════════════════════════════════════════
+let timerID = null;
+
+function goToS2() {
+  showScreen('s2');
+  startTimer();
+}
+
+function startTimer() {
+  const TOTAL = 6;
+  let t = TOTAL;
+  const numEl  = document.getElementById('timerNum');
+  const barEl  = document.getElementById('timerBar');
+  const s2     = document.getElementById('s2');
+
+  numEl.textContent = t;
+  barEl.style.width = '100%';
+  barEl.classList.remove('urgent');
+  numEl.classList.remove('urgent');
+  s2.classList.remove('flashing');
+
+  clearInterval(timerID);
+  timerID = setInterval(() => {
+    t--;
+    numEl.textContent = t;
+    barEl.style.width = (t / TOTAL * 100) + '%';
+
+    if (t <= 2) {
+      barEl.classList.add('urgent');
+      numEl.classList.add('urgent');
+      s2.classList.add('flashing');
+    }
+    if (t <= 0) {
+      clearInterval(timerID);
+      s2.classList.remove('flashing');
+      // Screen goes blank
+      showScreen('s3');
+    }
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════
+// SCREEN 3 — Blank prompt
+// ═══════════════════════════════════════════════════
+function goToQuiz() {
+  quizOrder = shuffled();
+  quizIndex = 0;
+  buildProgressDots();
+  showQuizMonument();
+  showScreen('s4');
+}
+
+// ═══════════════════════════════════════════════════
+// SCREEN 4 — Quiz
+// ═══════════════════════════════════════════════════
+let quizOrder = [];
+let quizIndex = 0;
+
+function shuffled() {
+  const arr = [...MONUMENTS];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildProgressDots() {
+  const wrap = document.getElementById('progressDots');
+  wrap.innerHTML = '';
+  quizOrder.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'pdot';
+    d.id = 'pdot-' + i;
+    wrap.appendChild(d);
+  });
+}
+
+function updateDots() {
+  quizOrder.forEach((_, i) => {
+    const d = document.getElementById('pdot-' + i);
+    if (i < quizIndex)  d.className = 'pdot done';
+    else if (i === quizIndex) d.className = 'pdot current';
+    else d.className = 'pdot';
+  });
+}
+
+function showQuizMonument() {
+  const m = quizOrder[quizIndex];
+  updateDots();
+
+  // reset answer state
+  document.getElementById('quizRevealZone').style.display = 'block';
+  document.getElementById('answerReveal').classList.remove('show');
+  document.getElementById('nextBtn').classList.remove('show');
+  document.getElementById('doneMsg').classList.remove('show');
+  document.getElementById('quizCircle').style.display = 'block';
+  document.querySelector('.quiz-instruction').style.display = 'block';
+
+  // Build circle content
+  const circle = document.getElementById('quizCircle');
+  circle.innerHTML = `<div class="q-ph">${m.emoji}</div>`;
+
+  // Try real image
+  const img = new Image();
+  img.onload = () => {
+    circle.innerHTML = '';
+    const ri = document.createElement('img');
+    ri.src = m.img;
+    circle.appendChild(ri);
+  };
+  img.onerror = () => {};
+  img.src = m.img;
+}
+
+function revealAnswer(e) {
+  e.stopPropagation();
+  const m = quizOrder[quizIndex];
+  document.getElementById('quizRevealZone').style.display = 'none';
+  document.getElementById('answerName').textContent = m.name;
+  document.getElementById('answerFact').textContent = m.fact;
+  document.getElementById('answerReveal').classList.add('show');
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+function nextMonument(e) {
+  e.stopPropagation();
+  quizIndex++;
+  if (quizIndex < quizOrder.length) {
+    showQuizMonument();
+  } else {
+    // All done
+    document.getElementById('quizCircle').style.display = 'none';
+    document.querySelector('.quiz-instruction').style.display = 'none';
+    document.getElementById('quizRevealZone').style.display = 'none';
+    document.getElementById('answerReveal').classList.remove('show');
+    document.getElementById('nextBtn').classList.remove('show');
+    document.getElementById('doneMsg').classList.add('show');
+    // all dots green
+    quizOrder.forEach((_, i) => {
+      document.getElementById('pdot-' + i).className = 'pdot done';
+    });
+  }
+}
+
+function restart() {
+  quizOrder = shuffled();
+  quizIndex = 0;
+  buildProgressDots();
+  showQuizMonument();
+}
+
+// ═══════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── INIT ──
+buildGrids();
+</script>
+</body>
+</html>
