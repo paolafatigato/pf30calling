@@ -1,0 +1,23 @@
+{
+  "name": "London Shootout",
+  "short_name": "Shootout",
+  "description": "A monument memory game about London landmarks",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFF8EC",
+  "theme_color": "#F5903C",
+  "icons": [
+    {
+      "src": "tower-bridge.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "tower-bridge.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
